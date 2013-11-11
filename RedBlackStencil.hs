@@ -11,13 +11,14 @@ import Language.Haskell.TH.Quote
  
 
 -- | Solver for the Laplace equation.
-solveLaplace :: Monad m
-                => Int			-- ^ Number of iterations to use.
-                -> Double		-- ^ weight for over relaxing (>0.0 and <2.0).     -- new
-                -> Array U DIM2 Double	-- ^ Boundary value mask.
-                -> Array U DIM2 Double	-- ^ Boundary values.
-                -> Array U DIM2 Double	-- ^ Initial state.
-                -> m (Array U DIM2 Double)
+solveLaplace
+	:: Monad m
+    => Int			-- ^ Number of iterations to use.
+    -> Double		-- ^ weight for over relaxing (>0.0 and <2.0).     -- new
+	-> Array U DIM2 Double	-- ^ Boundary value mask.
+	-> Array U DIM2 Double	-- ^ Boundary values.
+	-> Array U DIM2 Double	-- ^ Initial state.
+	-> m (Array U DIM2 Double)
 
 solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit       -- new arg
  =  do
@@ -57,20 +58,19 @@ relaxLaplace omega r b rBM bBM rBV bBV evenRows
                    $ A.smap (/4)
                    $ altMapStencil2 (BoundConst 0) leftSt rightSt b evenRows
                    
-             b' <- computeP
-                   $ A.szipWith (+) bBV
+             let b' = -- computeP $
+                   A.szipWith (+) bBV
                    $ A.szipWith (*) bBM
                    $ A.smap (/4)
                    $ altMapStencil2 (BoundConst 0) rightSt leftSt r' evenRows
                    -- Note use of r' rather than r to compute b'
-    --         return (r', b')
-    -- Omega Not yet working because of insufficient representation information
+    --    return (r', b') will work but ignores over relaxation using omega
              r'' <- computeP
                        $ A.zipWith (+) (A.map (* (1- omega)) r)
                                         (A.map (* omega) (r'::Array U DIM2 Double))
              b'' <- computeP
                        $ A.zipWith (+) (A.map (* (1- omega)) b)
-                                        (A.map (* omega) (b'::Array U DIM2 Double))
+                                        (A.map (* omega) b')
              return (r'' , b'')
      --      
 
