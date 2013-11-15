@@ -1,55 +1,59 @@
-{-# LANGUAGE BangPatterns, TemplateHaskell, QuasiQuotes #-}
+{-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
+{-# OPTIONS_GHC -Wall                      #-}
+{-# OPTIONS_GHC -fno-warn-name-shadowing   #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults    #-}
+{-# OPTIONS_GHC -fno-warn-unused-do-bind   #-}
+{-# OPTIONS_GHC -fno-warn-missing-methods  #-}
+{-# OPTIONS_GHC -fno-warn-orphans          #-}
+
 module RedBlackStencil
    (solveLaplace)
 where	
 import Data.Array.Repa				as A
 import Data.Array.Repa.Stencil			as A
 import Data.Array.Repa.Stencil.Dim2		as A
-import qualified Data.Array.Repa.Shape		as S
-import Language.Haskell.TH
-import Language.Haskell.TH.Quote
  
 
 -- | Solver for the Laplace equation.
-solveLaplace
-	:: Monad m
-    => Int			-- ^ Number of iterations to use.
-    -> Double		-- ^ weight for over relaxing (>0.0 and <2.0).     -- new
-	-> Array U DIM2 Double	-- ^ Boundary value mask.
-	-> Array U DIM2 Double	-- ^ Boundary values.
-	-> Array U DIM2 Double	-- ^ Initial state. Should have even number of columns
-	-> m (Array U DIM2 Double)
+solveLaplace :: Monad m
+                => Int			-- ^ Number of iterations to use.
+                -> Double             	-- ^ weight for over relaxing (>0.0 and <2.0).
+                -> Array U DIM2 Double	-- ^ Boundary value mask.
+                -> Array U DIM2 Double	-- ^ Boundary values.
+                -> Array U DIM2 Double	-- ^ Initial state. Should
+                                        -- have even number of columns
+                -> m (Array U DIM2 Double)
 
-solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit       -- new
- =  do
-     rBM   <- computeP $ extractRed arrBoundMask
-     bBM   <- computeP $ extractBlack arrBoundMask
-     rBV   <- computeP $ extractRed arrBoundValue
-     bBV   <- computeP $ extractBlack arrBoundValue
-     rInit <- computeP $ extractRed arrInit
-     bInit <- computeP $ extractBlack arrInit
-     evenRows <- computeP $ traverse rInit id 
-                                  (\ _ (e :. i :. j) -> even i) 
-                        -- bool array of shape rInit indicating even rows    
-     let relaxL r b = relaxLaplace omega r b rBM bBM rBV bBV evenRows
-         go 0 r !b = computeP $ combineRB r b
-         go n r !b 
-           = do 
-               (newR,newB) <- relaxL r b
-               go (n - 1) newR newB
-     go steps rInit bInit
+solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
+ =  do rBM   <- computeP $ extractRed arrBoundMask
+       bBM   <- computeP $ extractBlack arrBoundMask
+       rBV   <- computeP $ extractRed arrBoundValue
+       bBV   <- computeP $ extractBlack arrBoundValue
+       rInit <- computeP $ extractRed arrInit
+       bInit <- computeP $ extractBlack arrInit
+       evenRows :: Array U DIM2 Bool <- computeP $
+                                        traverse rInit id (\ _ (_e :. i :. _j) -> even i) 
+       let relaxL r b = relaxLaplace omega r b rBM bBM rBV bBV evenRows
+           go 0 r !b = computeP $ combineRB r b
+           go n r !b 
+             = do (newR,newB) <- relaxL r b
+                  go (n - 1) newR newB
+       go steps rInit bInit
 
-relaxLaplace                                                        -- new
-	:: Monad m
-    => Double
-    -> Array U DIM2 Double	
-	-> Array U DIM2 Double
-    -> Array U DIM2 Double
-    -> Array U DIM2 Double
-    -> Array U DIM2 Double	
-	-> Array U DIM2 Double	
-    -> Array U DIM2 Bool	
-	-> m (Array U DIM2 Double, Array U DIM2 Double)
+relaxLaplace :: Monad m
+                => Double
+                -> Array U DIM2 Double	
+                -> Array U DIM2 Double
+                -> Array U DIM2 Double
+                -> Array U DIM2 Double
+                -> Array U DIM2 Double	
+                -> Array U DIM2 Double	
+                -> Array U DIM2 Bool	
+                -> m (Array U DIM2 Double, Array U DIM2 Double)
 relaxLaplace !omega r !b !rBM !bBM !rBV !bBV !evenRows
          = do
              r' <- computeP
@@ -123,8 +127,8 @@ altMapStencil2 !bd !s1 !s2 !arr !bools
          = alt (mapStencil2 bd s1 arr) (mapStencil2 bd s2 arr)
            where alt !l !r
                    = A.szipWith selector (A.szipWith (,) l r) bools
-                       where selector (m,n) True  = m
-                             selector (m,n) False = n
+                       where selector (m, _) True  = m
+                             selector (_, n) False = n
 
 -- Stencils
 
