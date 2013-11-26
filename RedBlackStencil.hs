@@ -56,28 +56,26 @@ relaxLaplace :: Monad m
                 -> m (Array U DIM2 Double, Array U DIM2 Double)
 relaxLaplace !omega r !b !rBM !bBM !rBV !bBV !evenRows
          = do
-             r' <- computeP
+             let r' =
                    $ A.szipWith (+) rBV
                    $ A.szipWith (*) rBM
                    $ A.smap (/4)
                    $ altMapStencil2 (BoundConst 0) leftSt rightSt b evenRows
                    
-             let b' = -- computeP $
+             r'' <- computeP
+                      $ A.zipWith (+) (A.map (* (1- omega)) r)
+                                      (A.map (* omega) r')       
+             let b' = 
                    A.szipWith (+) bBV
                    $ A.szipWith (*) bBM
                    $ A.smap (/4)
-                   $ altMapStencil2 (BoundConst 0) rightSt leftSt r' evenRows
-                   -- Note use of r' rather than r to compute b'
+                   $ altMapStencil2 (BoundConst 0) rightSt leftSt r'' evenRows
+                   -- Note use of r'' to compute b'
 
-    {-   This computation of r'' does not seem to add much as it is not used in 
-         future iterations if returned with b'' until the last step
-              r'' <- computeP
-                       $ A.zipWith (+) (A.map (* (1- omega)) r)
-                                        (A.map (* omega) (r'::Array U DIM2 Double)) -}
              b'' <- computeP
                        $ A.zipWith (+) (A.map (* (1- omega)) b)
                                         (A.map (* omega) b') 
-             return (r' , b'')      
+             return (r'' , b'')      
 
 combineRB :: Array U DIM2 Double -> Array U DIM2 Double -> Array D DIM2 Double
 combineRB r b =     -- arr(i,j) 
