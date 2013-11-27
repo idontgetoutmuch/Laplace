@@ -54,7 +54,7 @@ relaxLaplace :: Monad m
 relaxLaplace !omega r !b !rBM !bBM !rBV !bBV
          = do
              let r' =
-                   $ A.szipWith (+) rBV
+                   A.szipWith (+) rBV
                    $ A.szipWith (*) rBM
                    $ A.smap (/4)
                    $ altMapStencil2 (BoundConst 0) leftSt rightSt b
