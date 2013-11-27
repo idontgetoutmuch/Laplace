@@ -35,9 +35,7 @@ solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
        bBV   <- computeP $ extractBlack arrBoundValue
        rInit <- computeP $ extractRed arrInit
        bInit <- computeP $ extractBlack arrInit
-       evenRows :: Array U DIM2 Bool <- computeP $
-                                        traverse rInit id (\ _ (_e :. i :. _j) -> even i) 
-       let relaxL r b = relaxLaplace omega r b rBM bBM rBV bBV evenRows
+       let relaxL r b = relaxLaplace omega r b rBM bBM rBV bBV
            go 0 r !b = computeP $ combineRB r b
            go n r !b 
              = do (newR,newB) <- relaxL r b
@@ -52,15 +50,14 @@ relaxLaplace :: Monad m
                 -> Array U DIM2 Double
                 -> Array U DIM2 Double	
                 -> Array U DIM2 Double	
-                -> Array U DIM2 Bool	
                 -> m (Array U DIM2 Double, Array U DIM2 Double)
-relaxLaplace !omega r !b !rBM !bBM !rBV !bBV !evenRows
+relaxLaplace !omega r !b !rBM !bBM !rBV !bBV
          = do
              let r' =
                    $ A.szipWith (+) rBV
                    $ A.szipWith (*) rBM
                    $ A.smap (/4)
-                   $ altMapStencil2 (BoundConst 0) leftSt rightSt b evenRows
+                   $ altMapStencil2 (BoundConst 0) leftSt rightSt b
                    
              r'' <- computeP
                       $ A.zipWith (+) (A.map (* (1- omega)) r)
@@ -69,7 +66,7 @@ relaxLaplace !omega r !b !rBM !bBM !rBV !bBV !evenRows
                    A.szipWith (+) bBV
                    $ A.szipWith (*) bBM
                    $ A.smap (/4)
-                   $ altMapStencil2 (BoundConst 0) rightSt leftSt r'' evenRows
+                   $ altMapStencil2 (BoundConst 0) rightSt leftSt r''
                    -- Note use of r'' to compute b'
 
              b'' <- computeP
@@ -116,17 +113,16 @@ altMapStencil2
      -> Stencil DIM2 Double
      -> Stencil DIM2 Double
      -> Array U DIM2 Double
-     -> Array U DIM2 Bool
      -> Array D DIM2 Double                   
-altMapStencil2 !bd !s1 !s2 !arr !bools
-        -- maps stencil s1 or s2 over arr indices indicated by bools array
-        -- currently does both on all indices and selects after
-        -- this may be ok if laziness + inlining removes redundant computation
-         = alt (mapStencil2 bd s1 arr) (mapStencil2 bd s2 arr)
-           where alt !l !r
-                   = A.szipWith selector (A.szipWith (,) l r) bools
-                       where selector (m, _) True  = m
-                             selector (_, n) False = n
+altMapStencil2 !bd !s1 !s2 !arr
+        -- Maps stencil s1 on even rows and s2 on odd rows of arr.
+        -- Currently does both on all indices and selects after.
+        -- This may be ok if laziness + inlining removes redundant computation
+         = traverse2 (mapStencil2 bd s1 arr) (mapStencil2 bd s2 arr)
+                     (\ e _ -> e)
+                     (\ get1 get2 (e :. i :. j) -> 
+                            (if even i then get1 else get2) (e :. i :. j)
+                     )
 
 -- Stencils
 
