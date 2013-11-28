@@ -37,41 +37,30 @@ solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
        bInit <- computeP $ extractBlack arrInit
        let go 0 !r !b = computeP $ combineRB r b
            go n !r !b 
-             = do (newR,newB) <- relaxLaplace omega r b rBM bBM rBV bBV
-                  go (n - 1) newR newB
+            = do (newR,newB) <- relaxLaplace r b
+                 go (n - 1) newR newB
+           relaxLaplace r b
+            = do
+                 let r' = 
+                       A.szipWith (+) (rBV:: Array U DIM2 Double)
+                       $ A.szipWith (*) (rBM:: Array U DIM2 Double)
+                       $ A.smap (/4)
+                       $ altMapStencil2 (BoundConst 0) leftSt rightSt b
+                 r'' <- computeP
+                          $ A.zipWith (+) (A.map (* (1-omega)) r)
+                                          (A.map (* omega) r')      
+                 let b' = 
+                       A.szipWith (+) (bBV:: Array U DIM2 Double)
+                       $ A.szipWith (*) (bBM:: Array U DIM2 Double)
+                       $ A.smap (/4)
+                       $ altMapStencil2 (BoundConst 0) rightSt leftSt r''
+                       -- Note use of r'' to compute b'
+
+                 b'' <- computeP
+                           $ A.zipWith (+) (A.map (* (1-omega)) b)
+                                           (A.map (* omega) b') 
+                 return (r'' , b'')     
        go steps rInit bInit
-
-relaxLaplace :: Monad m
-                => Double
-                -> Array U DIM2 Double	
-                -> Array U DIM2 Double
-                -> Array U DIM2 Double
-                -> Array U DIM2 Double
-                -> Array U DIM2 Double	
-                -> Array U DIM2 Double	
-                -> m (Array U DIM2 Double, Array U DIM2 Double)
-relaxLaplace !omega r !b !rBM !bBM !rBV !bBV
-         = do
-             let r' =
-                   A.szipWith (+) rBV
-                   $ A.szipWith (*) rBM
-                   $ A.smap (/4)
-                   $ altMapStencil2 (BoundConst 0) leftSt rightSt b
-                   
-             r'' <- computeP
-                      $ A.zipWith (+) (A.map (* (1- omega)) r)
-                                      (A.map (* omega) r')       
-             let b' = 
-                   A.szipWith (+) bBV
-                   $ A.szipWith (*) bBM
-                   $ A.smap (/4)
-                   $ altMapStencil2 (BoundConst 0) rightSt leftSt r''
-                   -- Note use of r'' to compute b'
-
-             b'' <- computeP
-                       $ A.zipWith (+) (A.map (* (1- omega)) b)
-                                        (A.map (* omega) b') 
-             return (r'' , b'')      
 
 combineRB :: Array U DIM2 Double -> Array U DIM2 Double -> Array D DIM2 Double
 combineRB r b =     -- arr(i,j) 
