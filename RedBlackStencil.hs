@@ -13,9 +13,9 @@
 module RedBlackStencil
    (solveLaplace)
 where	
-import Data.Array.Repa				as A
-import Data.Array.Repa.Stencil			as A
-import Data.Array.Repa.Stencil.Dim2		as A
+import Data.Array.Repa                 as A
+import Data.Array.Repa.Stencil         as A
+import Data.Array.Repa.Stencil.Dim2    as A
  
 
 -- | Solver for the Laplace equation.
@@ -77,31 +77,31 @@ combineRB r b =     -- arr(i,j)
 
 extractRed :: Array U DIM2 Double -> Array D DIM2 Double
 extractRed arr =  
-    -- Expects even number of columns for arr (one added before div for odd case)
-                     -- r(i,j) = arr(i, 2*j - (i `mod` 2))
+    -- Expects even number of columns for arr
+                     -- r(i,j) = arr(i, 2*j + (i `mod` 2))
                      -- arr has i <- 0..n-1, j <- 0..2m-1
                      -- r   has i <- 0..n-1 , j <- 0..m-1
               traverse arr 
-                      (\ (e :. i :. j) -> (e :. i :. ((j+1) `div` 2)))
+                      (\ (e :. i :. j) -> (e :. i :. (j `div` 2)))
                       (\get (e :. i :. j) -> get (e :. i :. 2*j + (i `mod` 2)))
 
 extractBlack :: Array U DIM2 Double -> Array D DIM2 Double
 extractBlack arr =  
-    -- Expects even number of columns for arr (one added before div for odd case)
-                     -- b(i,j) = arr(i, 2*j - ((i+1) `mod` 2))
+    -- Expects even number of columns for arr
+                     -- b(i,j) = arr(i, 2*j + ((i+1) `mod` 2))
                      -- arr has i <- 0..n-1, j <- 0..2m-1
                      -- b   has i <- 0..n-1 , j <- 0..m-1
              traverse arr 
-                      (\ (e :. i :. j) -> (e :. i :. ((j+1) `div` 2)))
+                      (\ (e :. i :. j) -> (e :. i :. (j `div` 2)))
                       (\get (e :. i :. j) -> get (e :. i :. 2*j + ((i+1) `mod` 2)))
 
 
 altMapStencil2
-  :: Boundary Double
-     -> Stencil DIM2 Double
-     -> Stencil DIM2 Double
-     -> Array U DIM2 Double
-     -> Array D DIM2 Double                   
+      :: Boundary Double
+      -> Stencil DIM2 Double
+      -> Stencil DIM2 Double
+      -> Array U DIM2 Double
+      -> Array D DIM2 Double                   
 altMapStencil2 !bd !s1 !s2 !arr
         -- Maps stencil s1 on even rows and s2 on odd rows of arr.
         -- Currently does both on all indices and selects after.
