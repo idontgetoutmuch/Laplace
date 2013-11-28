@@ -35,10 +35,9 @@ solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
        bBV   <- computeP $ extractBlack arrBoundValue
        rInit <- computeP $ extractRed arrInit
        bInit <- computeP $ extractBlack arrInit
-       let relaxL r b = relaxLaplace omega r b rBM bBM rBV bBV
-           go 0 !r !b = computeP $ combineRB r b
+       let go 0 !r !b = computeP $ combineRB r b
            go n !r !b 
-             = do (newR,newB) <- relaxL r b
+             = do (newR,newB) <- relaxLaplace omega r b rBM bBM rBV bBV
                   go (n - 1) newR newB
        go steps rInit bInit
 
