@@ -111,6 +111,7 @@ altMapStencil2 !bd !s1 !s2 !arr
                      (\ get1 get2 (e :. i :. j) -> 
                             (if even i then get1 else get2) (e :. i :. j)
                      )
+{-# INLINE altMapStencil2 #-}
 
 -- Stencils
 
