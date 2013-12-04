@@ -47,8 +47,8 @@ solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
                        $ A.smap (/4)
                        $ altMapStencil2 (BoundConst 0) leftSt rightSt b
                  r'' <- computeP
-                          $ A.zipWith (+) (A.map (* (1-omega)) r)
-                                          (A.map (* omega) r')      
+                          $ A.szipWith (+) (A.map (* (1-omega)) r)
+                                          (A.smap (* omega) r')      
                  let b' = 
                        A.szipWith (+) (bBV:: Array U DIM2 Double)
                        $ A.szipWith (*) (bBM:: Array U DIM2 Double)
@@ -57,8 +57,8 @@ solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
                        -- Note use of r'' to compute b'
 
                  b'' <- computeP
-                           $ A.zipWith (+) (A.map (* (1-omega)) b)
-                                           (A.map (* omega) b') 
+                           $ A.szipWith (+) (A.map (* (1-omega)) b)
+                                           (A.smap (* omega) b') 
                  return (r'' , b'')     
        go steps rInit bInit
 
@@ -74,6 +74,8 @@ combineRB r b =     -- arr(i,j)
                      (\ get1 get2 (e :. i :. j) -> 
                               (if even(i+j) then get1 else get2)
                                 (e :. i :. j `div` 2))
+                                
+{-# INLINE combineRB #-}
 
 extractRed :: Array U DIM2 Double -> Array D DIM2 Double
 extractRed arr =  
@@ -85,6 +87,8 @@ extractRed arr =
                       (\ (e :. i :. j) -> (e :. i :. (j `div` 2)))
                       (\get (e :. i :. j) -> get (e :. i :. 2*j + (i `mod` 2)))
 
+{-# INLINE extractRed #-}
+
 extractBlack :: Array U DIM2 Double -> Array D DIM2 Double
 extractBlack arr =  
     -- Expects even number of columns for arr
@@ -95,6 +99,7 @@ extractBlack arr =
                       (\ (e :. i :. j) -> (e :. i :. (j `div` 2)))
                       (\get (e :. i :. j) -> get (e :. i :. 2*j + ((i+1) `mod` 2)))
 
+{-# INLINE extractBlack #-}
 
 altMapStencil2
       :: Boundary Double
@@ -111,6 +116,7 @@ altMapStencil2 !bd !s1 !s2 !arr
                      (\ get1 get2 (e :. i :. j) -> 
                             (if even i then get1 else get2) (e :. i :. j)
                      )
+                     
 {-# INLINE altMapStencil2 #-}
 
 -- Stencils
