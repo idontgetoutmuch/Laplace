@@ -35,32 +35,30 @@ solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
        bBV   <- computeP $ extractBlack arrBoundValue
        rInit <- computeP $ extractRed arrInit
        bInit <- computeP $ extractBlack arrInit
-       let go 0 !r !b = computeP $ combineRB r b
+       let go 0 !r !b = computeP $ combineRB r b -- return final combined array
            go n !r !b 
             = do (newR,newB) <- relaxLaplace r b
                  go (n - 1) newR newB
-           relaxLaplace r b
+           relaxLaplace !r !b
             = do
-                 let r' = 
-                       A.szipWith (+) (rBV:: Array U DIM2 Double)
+                 r' <- computeP
+                       $ A.szipWith (+) (rBV:: Array U DIM2 Double)
                        $ A.szipWith (*) (rBM:: Array U DIM2 Double)
+                       $ A.szipWith (overRSum omega) r
                        $ A.smap (/4)
                        $ altMapStencil2 (BoundConst 0) leftSt rightSt b
-                 r'' <- computeP
-                          $ A.szipWith (+) (A.map (* (1-omega)) r)
-                                          (A.smap (* omega) r')      
-                 let b' = 
-                       A.szipWith (+) (bBV:: Array U DIM2 Double)
+                 b' <- computeP
+                       $ A.szipWith (+) (bBV:: Array U DIM2 Double)
                        $ A.szipWith (*) (bBM:: Array U DIM2 Double)
+                       $ A.szipWith (overRSum omega) b
                        $ A.smap (/4)
-                       $ altMapStencil2 (BoundConst 0) rightSt leftSt r''
-                       -- Note use of r'' to compute b'
-
-                 b'' <- computeP
-                           $ A.szipWith (+) (A.map (* (1-omega)) b)
-                                           (A.smap (* omega) b') 
-                 return (r'' , b'')     
+                       $ altMapStencil2 (BoundConst 0) rightSt leftSt r'
+                       -- Note use of r' to compute b'
+                 return (r' , b')     
        go steps rInit bInit
+ 
+overRSum :: Double -> Double -> Double -> Double
+overRSum omega old new = (1-omega)*old + omega*new
 
 combineRB :: Array U DIM2 Double -> Array U DIM2 Double -> Array D DIM2 Double
 combineRB r b =     -- arr(i,j) 
