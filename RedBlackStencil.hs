@@ -29,36 +29,38 @@ solveLaplace :: Monad m
                 -> m (Array U DIM2 Double)
 
 solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
- =  do rBM   <- computeP $ extractRed arrBoundMask
-       bBM   <- computeP $ extractBlack arrBoundMask
-       rBV   <- computeP $ extractRed arrBoundValue
-       bBV   <- computeP $ extractBlack arrBoundValue
-       rInit <- computeP $ extractRed arrInit
-       bInit <- computeP $ extractBlack arrInit
+ =  do redBoundMask    <- computeP $ projectRed arrBoundMask
+       blackBoundMask  <- computeP $ projectBlack arrBoundMask
+       redBoundValue   <- computeP $ projectRed arrBoundValue
+       blackBoundValue <- computeP $ projectBlack arrBoundValue
+       redInit         <- computeP $ projectRed arrInit
+       blackInit       <- computeP $ projectBlack arrInit
        let go 0 !r !b = computeP $ combineRB r b -- return final combined array
            go n !r !b 
-            = do (newR,newB) <- relaxLaplace r b
-                 go (n - 1) newR newB
+            = do (r',b') <- relaxLaplace r b
+                 go (n - 1) r' b'
+                  
+           {-# INLINE relaxLaplace #-}
            relaxLaplace !r !b
             = do
                  r' <- computeP
-                       $ A.szipWith (+) (rBV:: Array U DIM2 Double)
-                       $ A.szipWith (*) (rBM:: Array U DIM2 Double)
-                       $ A.szipWith (overRSum omega) r
+                       $ A.szipWith (+) (redBoundValue:: Array U DIM2 Double)
+                       $ A.szipWith (*) (redBoundMask:: Array U DIM2 Double)
+                       $ A.szipWith (relaxWith omega) r
                        $ A.smap (/4)
                        $ altMapStencil2 (BoundConst 0) leftSt rightSt b
                  b' <- computeP
-                       $ A.szipWith (+) (bBV:: Array U DIM2 Double)
-                       $ A.szipWith (*) (bBM:: Array U DIM2 Double)
-                       $ A.szipWith (overRSum omega) b
+                       $ A.szipWith (+) (blackBoundValue:: Array U DIM2 Double)
+                       $ A.szipWith (*) (blackBoundMask:: Array U DIM2 Double)
+                       $ A.szipWith (relaxWith omega) b
                        $ A.smap (/4)
                        $ altMapStencil2 (BoundConst 0) rightSt leftSt r'
                        -- Note use of r' to compute b'
                  return (r' , b')     
        go steps rInit bInit
  
-overRSum :: Double -> Double -> Double -> Double
-overRSum omega old new = (1-omega)*old + omega*new
+relaxWith :: Double -> Double -> Double -> Double
+relaxWith omega old new = (1-omega)*old + omega*new
 
 combineRB :: Array U DIM2 Double -> Array U DIM2 Double -> Array D DIM2 Double
 combineRB r b =     -- arr(i,j) 
@@ -75,8 +77,8 @@ combineRB r b =     -- arr(i,j)
                                 
 {-# INLINE combineRB #-}
 
-extractRed :: Array U DIM2 Double -> Array D DIM2 Double
-extractRed arr =  
+projectRed :: Array U DIM2 Double -> Array D DIM2 Double
+projectRed arr =  
     -- Expects even number of columns for arr
                      -- r(i,j) = arr(i, 2*j + (i `mod` 2))
                      -- arr has i <- 0..n-1, j <- 0..2m-1
@@ -85,10 +87,10 @@ extractRed arr =
                       (\ (e :. i :. j) -> (e :. i :. (j `div` 2)))
                       (\get (e :. i :. j) -> get (e :. i :. 2*j + (i `mod` 2)))
 
-{-# INLINE extractRed #-}
+{-# INLINE projectRed #-}
 
-extractBlack :: Array U DIM2 Double -> Array D DIM2 Double
-extractBlack arr =  
+projectBlack :: Array U DIM2 Double -> Array D DIM2 Double
+projecctBlack arr =  
     -- Expects even number of columns for arr
                      -- b(i,j) = arr(i, 2*j + ((i+1) `mod` 2))
                      -- arr has i <- 0..n-1, j <- 0..2m-1
@@ -97,7 +99,7 @@ extractBlack arr =
                       (\ (e :. i :. j) -> (e :. i :. (j `div` 2)))
                       (\get (e :. i :. j) -> get (e :. i :. 2*j + ((i+1) `mod` 2)))
 
-{-# INLINE extractBlack #-}
+{-# INLINE projectBlack #-}
 
 altMapStencil2
       :: Boundary Double
