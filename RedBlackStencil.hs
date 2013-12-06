@@ -57,7 +57,7 @@ solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
                        $ altMapStencil2 (BoundConst 0) rightSt leftSt r'
                        -- Note use of r' to compute b'
                  return (r' , b')     
-       go steps rInit bInit
+       go steps redInit blackInit
  
 relaxWith :: Double -> Double -> Double -> Double
 relaxWith omega old new = (1-omega)*old + omega*new
