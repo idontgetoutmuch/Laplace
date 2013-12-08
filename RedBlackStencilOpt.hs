@@ -53,17 +53,19 @@ relaxStep :: Double
           -> Stencil DIM2 Double
           -> Array D DIM2 Double                   
 
-relaxStep !omega !x !y !boundValue !boundMask !s1 !s2 
+relaxStep !omega !old !nbs !boundValue !boundMask !stencil1 !stencil2 
     = A.szipWith (+) boundValue
       $ A.szipWith (*) boundMask
-      $ A.szipWith (relaxWith omega) x
+      $ A.szipWith (relaxWith omega) old
       $ A.smap (/4)
-      $ altMapStencil2 (BoundConst 0) s1 s2 y
+      $ altMapStencil2 (BoundConst 0) s1 s2 nbs
                        
 {-# INLINE relaxStep #-}
  
 relaxWith :: Double -> Double -> Double -> Double
 relaxWith omega old new = (1-omega)*old + omega*new
+
+{-# INLINE relaxWith #-}
            
 combineRB :: Array U DIM2 Double -> Array U DIM2 Double -> Array D DIM2 Double
 combineRB r b =     -- arr(i,j) 
