@@ -15,20 +15,22 @@ import System.Environment
 import Data.Word
 import Control.Monad
 import RedBlackStencil          as RB                                      -- new
+import RedBlackStencilOpt       as RBO                                     -- new
 import Data.Array.Repa          as R
 import Prelude                  as P
 
 type Solver m 
 	=  Monad m
     => Int			-- ^ Number of iterations to use.
-    -> Double		-- ^ weight for over relaxing (>= 0.0).                -- new
+    -> Double		-- ^ weight for over relaxing (between 0.0 and 2.0).     -- new
 	-> Array U DIM2 Double	-- ^ Boundary value mask.
 	-> Array U DIM2 Double	-- ^ Boundary values.
 	-> Array U DIM2 Double	-- ^ Initial state.
 	-> m (Array U DIM2 Double)
 
 solvers                                                                     -- new
- = 	[  ("redblack", 	RB.solveLaplace)
+ = 	[  ("redblack", 	RB.solveLaplace),
+       ("redblackOpt", 	RBO.solveLaplace),
     ]                                 
 
 main :: IO ()
