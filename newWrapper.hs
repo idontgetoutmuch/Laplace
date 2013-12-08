@@ -30,7 +30,7 @@ type Solver m
 
 solvers                                                                     -- new
  = 	[  ("redblack", 	RB.solveLaplace)
---       ,("redblackOpt", 	RBO.solveLaplace)
+       ,("redblackOpt", 	RBO.solveLaplace)
     ]                                 
 
 main :: IO ()
