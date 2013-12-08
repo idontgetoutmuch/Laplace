@@ -34,39 +34,48 @@ solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
        blackBoundValue <- computeP $ projectBlack arrBoundValue
        redInit         <- computeP $ projectRed arrInit
        blackInit       <- computeP $ projectBlack arrInit
-       let go 0 !r !b = computeP $ combineRB r b -- return final combined array
-           go n !r !b 
+       iterateLaplace steps omega redInit blackInit
+                      redBoundValue blackBoundValue redBoundMask blackBoundMask
+       
+
+iterateLaplace ::
+	Monad m
+    => Int
+    -> Double
+    -> Array U DIM2 Double	
+	-> Array U DIM2 Double
+	-> Array U DIM2 Double	
+	-> Array U DIM2 Double
+	-> Array U DIM2 Double
+	-> Array U DIM2 Double
+	-> m (Array U DIM2 Double)
+              
+iterateLaplace !steps !omega !redInit !blackInit
+               !redBoundValue !blackBoundValue !redBoundMask !blackBoundMask 
+     = go steps redInit blackInit
+       where 
+         go 0 !r !b = computeP $ combineRB r b -- return final combined array
+         go n !r !b 
             = do r' <- computeP
-                       $ relaxStep omega r b redBoundValue redBoundMask leftSt rightSt
+                       $ relaxStep r b redBoundValue redBoundMask leftSt rightSt
                  b' <- computeP 
-                       $ relaxStep omega b r' blackBoundValue blackBoundMask rightSt leftSt
+                       $ relaxStep b r' blackBoundValue blackBoundMask rightSt leftSt
                  go (n - 1) r' b'
                  
-       go steps redInit blackInit
+         {-# INLINE relaxStep #-}
+         relaxStep !arrOld !arrNbs !boundValue !boundMask !stencil1 !stencil2 
+            = A.szipWith (+) boundValue
+              $ A.szipWith (*) boundMask
+              $ A.szipWith weightedSum arrOld
+              $ A.smap (/4)
+              $ altMapStencil2 (BoundConst 0) stencil1 stencil2 arrNbs
 
-relaxStep :: Double
-          -> Array U DIM2 Double	
-	      -> Array U DIM2 Double
-	      -> Array U DIM2 Double	
-	      -> Array U DIM2 Double
-          -> Stencil DIM2 Double
-          -> Stencil DIM2 Double
-          -> Array D DIM2 Double                   
-
-relaxStep !omega !old !nbs !boundValue !boundMask !stencil1 !stencil2 
-    = A.szipWith (+) boundValue
-      $ A.szipWith (*) boundMask
-      $ A.szipWith (relaxWith omega) old
-      $ A.smap (/4)
-      $ altMapStencil2 (BoundConst 0) s1 s2 nbs
-                       
-{-# INLINE relaxStep #-}
- 
-relaxWith :: Double -> Double -> Double -> Double
-relaxWith omega old new = (1-omega)*old + omega*new
-
-{-# INLINE relaxWith #-}
-           
+         {-# INLINE weightedSum #-}
+         weightedSum !old !new = omega'*old + omega*new
+         omega' = 1-omega
+  
+{-# INLINE iterateLaplace #-}
+                              
 combineRB :: Array U DIM2 Double -> Array U DIM2 Double -> Array D DIM2 Double
 combineRB r b =     -- arr(i,j) 
                     --     | even(i+j) = r(i, j `div` 2)
