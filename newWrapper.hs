@@ -29,8 +29,8 @@ type Solver m
 	-> m (Array U DIM2 Double)
 
 solvers                                                                     -- new
- = 	[  ("redblack", 	RB.solveLaplace),
-       ("redblackOpt", 	RBO.solveLaplace),
+ = 	[  ("redblack", 	RB.solveLaplace)
+--       ,("redblackOpt", 	RBO.solveLaplace)
     ]                                 
 
 main :: IO ()
