@@ -92,7 +92,7 @@ combineRB r b =     -- arr(i,j)
 {-# INLINE combineRB #-}
 
 projectRed :: Array U DIM2 Double -> Array D DIM2 Double
-<<<<<<< HEAD
+
 projectRed arr =  
     -- Expects even number of columns for arr 
                      -- r(i,j) = arr(i, 2*j + (i `mod` 2))
