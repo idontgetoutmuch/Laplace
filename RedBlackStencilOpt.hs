@@ -64,11 +64,14 @@ iterateLaplace !steps !omega !redInit !blackInit
                  
          {-# INLINE relaxStep #-}
          relaxStep !arrOld !arrNbs !boundValue !boundMask !stencil1 !stencil2 
-            = A.szipWith (+) boundValue
-              $ A.szipWith (*) boundMask
-              $ A.szipWith weightedSum arrOld
-              $ A.smap (/4)
-              $ altMapStencil2 (BoundConst 0) stencil1 stencil2 arrNbs
+            = altRows (f stencil1) (f stencil2)
+              where 
+                    {-# INLINE f #-}
+                    f s = A.szipWith (+) boundValue
+                          $ A.szipWith (*) boundMask
+                          $ A.szipWith weightedSum arrOld
+                          $ A.smap (/4)
+                          $ mapStencil2 (BoundConst 0) s arrNbs
 
          {-# INLINE weightedSum #-}
          weightedSum !old !new = omega'*old + omega*new
@@ -115,24 +118,20 @@ projectBlack arr =
 
 {-# INLINE projectBlack #-}
 
-
-altMapStencil2::
-        Boundary Double
-     -> Stencil DIM2 Double
-     -> Stencil DIM2 Double
-     -> Array U DIM2 Double
-     -> Array D DIM2 Double                   
-altMapStencil2 !bd !s1 !s2 !arr
-        -- Maps stencil s1 on even rows and s2 on odd rows of arr.
-        -- Currently does both on all indices and selects after.
-        -- This may be ok if laziness + inlining removes redundant computation
-         = traverse2 (mapStencil2 bd s1 arr) (mapStencil2 bd s2 arr)
+altRows :: forall r1 r2 a .
+         (Source r1 a, Source r2 a) =>
+         Array r1 DIM2 a
+         -> Array r2 DIM2 a -> Array D DIM2 a  
+                
+altRows !arr1 !arr2
+        -- alternates rows from 2 arrays (assumed to be the same extent)
+         = traverse2 arr1 arr2
                      (\ e _ -> e)
                      (\ get1 get2 (e :. i :. j) -> 
                           (if even i then get1 else get2) (e :. i :. j)
                      )
                      
-{-# INLINE altMapStencil2 #-}
+{-# INLINE altRows #-}
 
 -- Stencils
 
