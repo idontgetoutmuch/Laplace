@@ -70,8 +70,7 @@ iterateLaplace !steps !omega !redInit !blackInit
               $ altMapStencil2 (BoundConst 0) stencil1 stencil2 arrNbs
 
          {-# INLINE weightedSum #-}
-         weightedSum !old !new = omega'*old + omega*new
-         omega' = 1-omega
+         weightedSum !old !new = (1-omega)*old + omega*new
   
 {-# INLINE iterateLaplace #-}
                               

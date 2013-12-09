@@ -73,8 +73,7 @@ iterateLaplace !steps !omega !redInit !blackInit
                           $ mapStencil2 (BoundConst 0) s arrNbs
 
          {-# INLINE weightedSum #-}
-         weightedSum !old !new = omega'*old + omega*new
-         omega' = 1-omega
+         weightedSum !old !new = (1-omega)*old + omega*new
   
 {-# INLINE iterateLaplace #-}
                               
