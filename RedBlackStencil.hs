@@ -11,11 +11,11 @@
 {-# OPTIONS_GHC -fno-warn-orphans          #-}
 
 module RedBlackStencil
-    (solveLaplace)
-where	
-import Data.Array.Repa				    as A
-import Data.Array.Repa.Stencil			as A
-import Data.Array.Repa.Stencil.Dim2		as A
+   (solveLaplace)
+where
+import Data.Array.Repa                 as A
+import Data.Array.Repa.Stencil         as A
+import Data.Array.Repa.Stencil.Dim2    as A
 
 -- | Solver for the Laplace equation.
 solveLaplace::
@@ -77,7 +77,7 @@ iterateLaplace !steps !omega !redInit !blackInit
 {-# INLINE iterateLaplace #-}
                               
 combineRB :: Array U DIM2 Double -> Array U DIM2 Double -> Array D DIM2 Double
-combineRB r b =     -- arr(i,j) 
+combineRB r b =     -- arr(i,j)
                     --     | even(i+j) = r(i, j `div` 2)
                     --     | otherwise = b(i, j `div` 2)
                     -- arr has i <- 0..n-1 , j <- 0..2m-1
@@ -85,43 +85,44 @@ combineRB r b =     -- arr(i,j)
                     -- b   has i <- 0..n-1 , j <- 0..m-1
             traverse2 r b
                      (\ (e :. i :. j) _ -> (e :. i :. 2*j))
-                     (\ get1 get2 (e :. i :. j) -> 
+                     (\ get1 get2 (e :. i :. j) ->
                               (if even(i+j) then get1 else get2)
                                 (e :. i :. j `div` 2))
 
 {-# INLINE combineRB #-}
 
 projectRed :: Array U DIM2 Double -> Array D DIM2 Double
+<<<<<<< HEAD
 projectRed arr =  
     -- Expects even number of columns for arr 
                      -- r(i,j) = arr(i, 2*j + (i `mod` 2))
                      -- arr has i <- 0..n-1, j <- 0..2m-1
                      -- r   has i <- 0..n-1 , j <- 0..m-1
-              traverse arr 
+              traverse arr
                       (\ (e :. i :. j) -> (e :. i :. (j `div` 2)))
                       (\get (e :. i :. j) -> get (e :. i :. 2*j + (i `mod` 2)))
 
 {-# INLINE projectRed #-}
 
 projectBlack :: Array U DIM2 Double -> Array D DIM2 Double
-projectBlack arr =  
+projectBlack arr =
     -- Expects even number of columns for arr
                      -- b(i,j) = arr(i, 2*j + ((i+1) `mod` 2))
                      -- arr has i <- 0..n-1, j <- 0..2m-1
                      -- b   has i <- 0..n-1 , j <- 0..m-1
-             traverse arr 
+             traverse arr
                       (\ (e :. i :. j) -> (e :. i :. (j `div` 2)))
                       (\get (e :. i :. j) -> get (e :. i :. 2*j + ((i+1) `mod` 2)))
 
 {-# INLINE projectBlack #-}
 
+altMapStencil2
+      :: Boundary Double
+      -> Stencil DIM2 Double
+      -> Stencil DIM2 Double
+      -> Array U DIM2 Double
+      -> Array D DIM2 Double
 
-altMapStencil2::
-        Boundary Double
-     -> Stencil DIM2 Double
-     -> Stencil DIM2 Double
-     -> Array U DIM2 Double
-     -> Array D DIM2 Double                   
 altMapStencil2 !bd !s1 !s2 !arr
         -- Maps stencil s1 on even rows and s2 on odd rows of arr.
         -- Currently does both on all indices and selects after.
@@ -131,19 +132,19 @@ altMapStencil2 !bd !s1 !s2 !arr
                      (\ get1 get2 (e :. i :. j) -> 
                           (if even i then get1 else get2) (e :. i :. j)
                      )
-                     
+
 {-# INLINE altMapStencil2 #-}
 
 -- Stencils
 
 leftSt :: Stencil DIM2 Double -- odd rows from b, even from r
-leftSt  =   [stencil2|  0 1 0         
-                        1 1 0 
+leftSt  =   [stencil2|  0 1 0
+                        1 1 0
                         0 1 0 |]
 
 rightSt :: Stencil DIM2 Double -- even rows from b, odd from r
-rightSt =   [stencil2|  0 1 0 
-                        0 1 1 
+rightSt =   [stencil2|  0 1 0
+                        0 1 1
                         0 1 0 |]
 
 

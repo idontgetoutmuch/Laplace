@@ -25,7 +25,7 @@ dx :: Rational
 dx = 1
 
 n :: Int
-n = 7
+n = 101
 
 r, z, u :: Double
 r = 5.0
@@ -74,37 +74,15 @@ bndMask a = traverse a id f
     f get (Z :. ix :. iy)
       = u
 
-checkConvergence :: Double -> Double -> Array U DIM2 Double -> Array D DIM2 Double
-checkConvergence dx dy a = traverse a id f
-  where
-    f get (Z :. ix :. iy)
-      | ix == 0
-      = get (Z :. ix :. iy)
-    f get (Z :. ix :. iy)
-      | ix == n
-      = get (Z :. ix :. iy)
-    f get (Z :. ix :. iy)
-      | iy == 0
-      = get (Z :. ix :. iy)
-    f get (Z :. ix :. iy)
-      | iy == n
-      = get (Z :. ix :. iy)
-    f get (Z :. ix :. iy)
-      = abs (v - u / denom)
-      where
-        beta = dx / dy
-        denom = 2 * (1 + beta^2)
-        v = get (Z :. ix :. iy)
-        u =           get (Z :. (ix-1) :. iy)     + get (Z :. (ix+1) :. iy) +
-            beta^2 * (get (Z :. ix     :. (iy-1)) + get (Z :. ix     :. (iy+1)))
-
 main = do
   p <- computeP $ bndMask arr
   v <- computeP $ bndVal arr
-  t <- solveLaplace 91 1.0 p v arr
+  t <- solveLaplace 16000 1.0 p v arr
   putStrLn "\nResults\n"
-  putStrLn $ render $ pPrint t
-  c :: Array U DIM2 Double <- computeP $ checkConvergence (fromRational dx) (fromRational dx) t
-  putStrLn "\nConvergence\n"
-  putStrLn $ render $ pPrint c
+  putStrLn $ show n
+  putStrLn $ render $ pPrint (t ! (Z :. (n `div` 2) :. (n `div` 2)))
+  putStrLn $ render $ pPrint (t ! (Z :. (0 :: Int)  :. (0 :: Int) ))
+  putStrLn $ render $ pPrint (t ! (Z :. (0 :: Int ) :. n          ))
+  putStrLn $ render $ pPrint (t ! (Z :. n           :. (0 :: Int) ))
+  putStrLn $ render $ pPrint (t ! (Z :. n           :. n          ))
 
