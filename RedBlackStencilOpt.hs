@@ -36,7 +36,6 @@ solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
        blackInit       <- computeP $ projectBlack arrInit
        iterateLaplace steps omega redInit blackInit
                       redBoundValue blackBoundValue redBoundMask blackBoundMask
-       
 
 iterateLaplace ::
 	Monad m
@@ -86,11 +85,14 @@ combineRB r b =     -- arr(i,j)
                     -- arr has i <- 0..n-1 , j <- 0..2m-1
                     -- r   has i <- 0..n-1 , j <- 0..m-1
                     -- b   has i <- 0..n-1 , j <- 0..m-1
-            traverse2 r b
-                     (\ (e :. i :. j) _ -> (e :. i :. 2*j))
-                     (\ get1 get2 (e :. i :. j) -> 
-                              (if even(i+j) then get1 else get2)
-                                (e :. i :. j `div` 2))
+    if extent r == extent b
+    then  traverse2 r b
+                    (\ (e :. i :. j) _ -> (e :. i :. 2*j))
+                    (\ get1 get2 (e :. i :. j) -> 
+                         (if even(i+j) then get1 else get2)
+                                (e :. i :. j `div` 2)
+                    )
+    else undefined
 
 {-# INLINE combineRB #-}
 
@@ -100,10 +102,13 @@ projectRed arr =
                      -- r(i,j) = arr(i, 2*j + (i `mod` 2))
                      -- arr has i <- 0..n-1, j <- 0..2m-1
                      -- r   has i <- 0..n-1 , j <- 0..m-1
-              traverse arr 
-                      (\ (e :. i :. j) -> (e :. i :. (j `div` 2)))
-                      (\get (e :. i :. j) -> get (e :. i :. 2*j + (i `mod` 2)))
-
+     let (_ :. j) = extent arr              
+     in  if even j 
+         then traverse arr 
+                       (\ (e :. i :. j) -> (e :. i :. (j `div` 2)))
+                       (\get (e :. i :. j) -> get (e :. i :. 2*j + (i `mod` 2)))
+         else undefined
+        
 {-# INLINE projectRed #-}
 
 projectBlack :: Array U DIM2 Double -> Array D DIM2 Double
@@ -112,24 +117,27 @@ projectBlack arr =
                      -- b(i,j) = arr(i, 2*j + ((i+1) `mod` 2))
                      -- arr has i <- 0..n-1, j <- 0..2m-1
                      -- b   has i <- 0..n-1 , j <- 0..m-1
-             traverse arr 
-                      (\ (e :. i :. j) -> (e :. i :. (j `div` 2)))
-                      (\get (e :. i :. j) -> get (e :. i :. 2*j + ((i+1) `mod` 2)))
+     let (_ :. j) = extent arr              
+     in  if even j 
+         then traverse arr 
+                       (\ (e :. i :. j) -> (e :. i :. (j `div` 2)))
+                       (\get (e :. i :. j) -> get (e :. i :. 2*j + ((i+1) `mod` 2)))
+         else undefined
 
 {-# INLINE projectBlack #-}
 
-altRows :: forall r1 r2 a .
-         (Source r1 a, Source r2 a) =>
-         Array r1 DIM2 a
-         -> Array r2 DIM2 a -> Array D DIM2 a  
+altRows :: forall r1 r2 a . (Source r1 a, Source r2 a)
+        => Array r1 DIM2 a -> Array r2 DIM2 a -> Array D DIM2 a  
                 
-altRows !arr1 !arr2
+altRows !arr1 !arr2 = 
         -- alternates rows from 2 arrays (assumed to be the same extent)
-         = traverse2 arr1 arr2
-                     (\ e _ -> e)
-                     (\ get1 get2 (e :. i :. j) -> 
-                          (if even i then get1 else get2) (e :. i :. j)
-                     )
+        if extent arr1 == extent arr2
+        then traverse2 arr1 arr2
+                       (\ e _ -> e)
+                       (\ get1 get2 e@(_ :. i :. _) -> 
+                          if even i then get1 e else get2 e
+                       )
+        else undefined
                      
 {-# INLINE altRows #-}
 
