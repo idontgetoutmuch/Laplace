@@ -37,7 +37,6 @@ solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
        iterateLaplace steps omega redInit blackInit
                       redBoundValue blackBoundValue redBoundMask blackBoundMask
        
-
 iterateLaplace ::
 	Monad m
     => Int

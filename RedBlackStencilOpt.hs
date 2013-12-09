@@ -130,14 +130,14 @@ altRows :: forall r1 r2 a . (Source r1 a, Source r2 a)
         => Array r1 DIM2 a -> Array r2 DIM2 a -> Array D DIM2 a  
                 
 altRows !arr1 !arr2 = 
-        -- alternates rows from 2 arrays (assumed to be the same extent)
-        if extent arr1 == extent arr2
-        then traverse2 arr1 arr2
-                       (\ e _ -> e)
-                       (\ get1 get2 e@(_ :. i :. _) -> 
-                          if even i then get1 e else get2 e
-                       )
-        else undefined
+    -- alternates rows from 2 arrays (assumed to be the same extent)
+    if extent arr1 == extent arr2
+    then traverse2 arr1 arr2
+                   (\ e _ -> e)
+                   (\ get1 get2 e@(_ :. i :. _) -> 
+                      if even i then get1 e else get2 e
+                   )
+    else undefined
                      
 {-# INLINE altRows #-}
 
