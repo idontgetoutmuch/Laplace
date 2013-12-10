@@ -142,12 +142,12 @@ altRows !arr1 !arr2 =
 
 -- Stencils
 
-leftSt :: Stencil DIM2 Double -- odd rows from b, even from r
+leftSt :: Stencil DIM2 Double -- even rows from b, odd from r
 leftSt  =   [stencil2|  0 1 0         
                         1 1 0 
                         0 1 0 |]
 
-rightSt :: Stencil DIM2 Double -- even rows from b, odd from r
+rightSt :: Stencil DIM2 Double -- odd rows from b, even from r
 rightSt =   [stencil2|  0 1 0 
                         0 1 1 
                         0 1 0 |]
