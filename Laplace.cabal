@@ -3,7 +3,7 @@ version:             0.1.0.0
 synopsis:            Numeric solution of Laplace's equation using repa
 license:             BSD3
 license-file:        LICENSE
-author:              Chris Reade
+author:              Chris Reade, Dominic Steinitz
 maintainer:          dominic@steinitz.org
 copyright:           Chris Reade, Dominic Steinitz
 category:            Math
@@ -23,3 +23,18 @@ executable Laplace
                        prettyclass >=1.0 && <1.1,
                        repa >= 3.2 && < 3.3
   default-language:    Haskell2010
+  ghc-options:         -O2 -rtsopts -fsimpl-tick-factor=1000 -threaded
+
+executable LaplaceOpt
+  main-is:             TestSymmOpt.hs
+  other-extensions:    BangPatterns,
+                       TemplateHaskell,
+                       QuasiQuotes,
+                       ScopedTypeVariables,
+                       FlexibleInstances
+  build-depends:       base >=4.6 && <4.7,
+                       pretty >=1.1 && <1.2,
+                       prettyclass >=1.0 && <1.1,
+                       repa >= 3.2 && < 3.3
+  default-language:    Haskell2010
+  ghc-options:         -O2 -rtsopts -fsimpl-tick-factor=1000 -threaded
