@@ -152,7 +152,6 @@ leftSt  =   [stencil2|  0 1 0
                         1 1 0 
                         0 1 0 |]
 
-<<<<<<< HEAD
 rightSt :: Stencil DIM2 Double -- odd rows from b, even from r
 rightSt =   [stencil2|  0 1 0 
                         0 1 1 
