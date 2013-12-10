@@ -11,21 +11,25 @@
 {-# OPTIONS_GHC -fno-warn-orphans          #-}
 
 module RedBlackStencilOpt
-    (solveLaplace)
-where	
-import Data.Array.Repa				    as A
+    ( solveLaplace
+    , projectRed
+    , projectBlack
+    , combineRB
+    ) where
+import Data.Array.Repa				as A
 import Data.Array.Repa.Stencil			as A
 import Data.Array.Repa.Stencil.Dim2		as A
 
+
 -- | Solver for the Laplace equation.
 solveLaplace::
-	Monad m
-    => Int			        -- ^ Number of iterations to use.
-    -> Double		        -- ^ weight for over relaxing (>0.0 and <2.0).
-	-> Array U DIM2 Double	-- ^ Boundary value mask.
-	-> Array U DIM2 Double	-- ^ Boundary values.
-	-> Array U DIM2 Double	-- ^ Initial state. Should have even number of columns
-	-> m (Array U DIM2 Double)
+  Monad m
+  => Int			-- ^ Number of iterations to use.
+  -> Double		        -- ^ weight for over relaxing (>0.0 and <2.0).
+  -> Array U DIM2 Double	-- ^ Boundary value mask.
+  -> Array U DIM2 Double	-- ^ Boundary values.
+  -> Array U DIM2 Double	-- ^ Initial state. Should have even number of columns
+  -> m (Array U DIM2 Double)
 
 solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
  =  do redBoundMask    <- computeP $ projectRed arrBoundMask
@@ -37,34 +41,35 @@ solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
        iterateLaplace steps omega redInit blackInit
                       redBoundValue blackBoundValue redBoundMask blackBoundMask
 
+
 iterateLaplace ::
-	Monad m
-    => Int
-    -> Double
-    -> Array U DIM2 Double	
-	-> Array U DIM2 Double
-	-> Array U DIM2 Double	
-	-> Array U DIM2 Double
-	-> Array U DIM2 Double
-	-> Array U DIM2 Double
-	-> m (Array U DIM2 Double)
-              
+  Monad m
+  => Int
+  -> Double
+  -> Array U DIM2 Double
+  -> Array U DIM2 Double
+  -> Array U DIM2 Double
+  -> Array U DIM2 Double
+  -> Array U DIM2 Double
+  -> Array U DIM2 Double
+  -> m (Array U DIM2 Double)
+
 iterateLaplace !steps !omega !redInit !blackInit
-               !redBoundValue !blackBoundValue !redBoundMask !blackBoundMask 
+               !redBoundValue !blackBoundValue !redBoundMask !blackBoundMask
      = go steps redInit blackInit
-       where 
+       where
          go 0 !r !b = computeP $ combineRB r b -- return final combined array
-         go n !r !b 
+         go n !r !b
             = do r' <- computeP
                        $ relaxStep r b redBoundValue redBoundMask leftSt rightSt
-                 b' <- computeP 
+                 b' <- computeP
                        $ relaxStep b r' blackBoundValue blackBoundMask rightSt leftSt
                  go (n - 1) r' b'
-                 
+
          {-# INLINE relaxStep #-}
-         relaxStep !arrOld !arrNbs !boundValue !boundMask !stencil1 !stencil2 
+         relaxStep !arrOld !arrNbs !boundValue !boundMask !stencil1 !stencil2
             = altRows (f stencil1) (f stencil2)
-              where 
+              where
                     {-# INLINE f #-}
                     f s = A.szipWith (+) boundValue
                           $ A.szipWith (*) boundMask
@@ -76,9 +81,9 @@ iterateLaplace !steps !omega !redInit !blackInit
          weightedSum !old !new = (1-omega)*old + omega*new
   
 {-# INLINE iterateLaplace #-}
-                              
+
 combineRB :: Array U DIM2 Double -> Array U DIM2 Double -> Array D DIM2 Double
-combineRB r b =     -- arr(i,j) 
+combineRB r b =     -- arr(i,j)
                     --     | even(i+j) = r(i, j `div` 2)
                     --     | otherwise = b(i, j `div` 2)
                     -- arr has i <- 0..n-1 , j <- 0..2m-1
@@ -96,8 +101,8 @@ combineRB r b =     -- arr(i,j)
 {-# INLINE combineRB #-}
 
 projectRed :: Array U DIM2 Double -> Array D DIM2 Double
-projectRed arr =  
-    -- Expects even number of columns for arr 
+projectRed arr =
+    -- Expects even number of columns for arr
                      -- r(i,j) = arr(i, 2*j + (i `mod` 2))
                      -- arr has i <- 0..n-1, j <- 0..2m-1
                      -- r   has i <- 0..n-1 , j <- 0..m-1
@@ -111,7 +116,7 @@ projectRed arr =
 {-# INLINE projectRed #-}
 
 projectBlack :: Array U DIM2 Double -> Array D DIM2 Double
-projectBlack arr =  
+projectBlack arr =
     -- Expects even number of columns for arr
                      -- b(i,j) = arr(i, 2*j + ((i+1) `mod` 2))
                      -- arr has i <- 0..n-1, j <- 0..2m-1
@@ -147,6 +152,7 @@ leftSt  =   [stencil2|  0 1 0
                         1 1 0 
                         0 1 0 |]
 
+<<<<<<< HEAD
 rightSt :: Stencil DIM2 Double -- odd rows from b, even from r
 rightSt =   [stencil2|  0 1 0 
                         0 1 1 

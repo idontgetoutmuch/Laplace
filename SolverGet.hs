@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 module SolverGet
 	(solveLaplace)
-where	
+where
 import Data.Array.Repa		        as R
 import Data.Array.Repa.Unsafe           as R
 import qualified Data.Array.Repa.Shape	as S
@@ -18,10 +18,10 @@ solveLaplace
 solveLaplace steps arrBoundMask arrBoundValue arrInit
  = go steps arrInit
  where	go !i !arr
-	   | i == 0	
+	   | i == 0
            = return     arr
 
-	   | otherwise	
+	   | otherwise
 	   = do arr' <- relaxLaplace arrBoundMask arrBoundValue arr
                 go (i - 1) arr'
 {-# NOINLINE solveLaplace #-}
@@ -39,7 +39,7 @@ solveLaplace steps arrBoundMask arrBoundValue arrInit
 --
 --	The value matrix has the boundary condition value in places where it holds,
 --	and 0 otherwise.
--- 
+--
 relaxLaplace
 	:: Monad m
         => Array U DIM2 Double	-- ^ Boundary condition mask
@@ -53,7 +53,7 @@ relaxLaplace arrBoundMask arrBoundValue arr
   $ R.zipWith (*) arrBoundMask
   $ unsafeTraverse arr id elemFn
   where
-	_ :. height :. width	
+	_ :. height :. width
 		= extent arr
 
 	{-# INLINE elemFn #-}
@@ -69,8 +69,6 @@ relaxLaplace arrBoundMask arrBoundValue arr
 	-- If so we can't apply the stencil because we don't have all the neighbours.
 	{-# INLINE isBorder #-}
 	isBorder !i !j
-	 	=  (i == 0) || (i >= width  - 1) 
-	 	|| (j == 0) || (j >= height - 1) 
+	 	=  (i == 0) || (i >= width  - 1)
+	 	|| (j == 0) || (j >= height - 1)
 {-# INLINE relaxLaplace #-}
-
-

@@ -77,7 +77,7 @@ bndMask a = traverse a id f
 main = do
   p <- computeP $ bndMask arr
   v <- computeP $ bndVal arr
-  t <- solveLaplace 16000 1.0 p v arr
+  t <- solveLaplace 32000 p v arr
   putStrLn "\nResults\n"
   putStrLn $ show n
   putStrLn $ render $ pPrint (t ! (Z :. (n `div` 2) :. (n `div` 2)))
