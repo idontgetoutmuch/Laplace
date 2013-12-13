@@ -11,11 +11,9 @@
 {-# OPTIONS_GHC -fno-warn-orphans          #-}
 
 module RedBlackStencilOpt
-    ( solveLaplace
-    , projectRed
-    , projectBlack
-    , combineRB
-    ) where
+     (solveLaplace) 
+where
+    
 import Data.Array.Repa				as A
 import Data.Array.Repa.Stencil			as A
 import Data.Array.Repa.Stencil.Dim2		as A
