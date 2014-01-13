@@ -82,9 +82,9 @@ redBlack n = concat $
                    , take n $ cycle [-1, 1]
                    ]
 
-gridSq :: (Int, Double) -> Diagram B R2
-gridSq (c, x) = text (printf "%2.2f" x) # scale 0.2 # fc white
-                <> square 1 # lw 0 # fc (getColour c)
+gridSq :: ((Int, Double), (Int, Int, Int)) -> Diagram B R2
+gridSq ((c, x), n) = text (printf "%2.2f" x) # scale 0.2 # fc white
+                     <> square 1 # lw 0 # fc (getColour c) # named n
 
   where
 
@@ -92,18 +92,18 @@ gridSq (c, x) = text (printf "%2.2f" x) # scale 0.2 # fc white
     getColour x | x ==  1 = red
     getColour x           = white
 
-grid :: Int -> [(Int,Double)] -> Diagram B R2
-grid n vs = if aLen == sLen
-            then result
-            else error $ "Specified grid size " ++ show sLen ++
-                         " Actual grid size "   ++ show aLen
+grid :: Int -> Int -> [(Int,Double)] -> Diagram B R2
+grid gridNum n vs = if aLen == sLen
+                    then result
+                    else error $ "Specified grid size " ++ show sLen ++
+                                 " Actual grid size "   ++ show aLen
   where
     aLen = length vs
     sLen = n * n
     result = vcat $
              map hcat $
              map (map gridSq) $
-             chunksOf n vs
+             chunksOf n (zip vs [(gridNum, i, j) | i <- [1..n], j <- [1..n]])
 
 main = do
   p <- computeP $ bndMask arr
@@ -113,42 +113,23 @@ main = do
   ts <- mapM (\nSteps -> solveLaplace  nSteps 1.3 p v arr) [1,2,3,4,5,6,7,24,25,26,27]
   us <- mapM (\nSteps -> solveLaplace' nSteps 1.3 p v arr) [1,2,3,4,5,6,7,24,25,26,27]
 
-  let displayGrid ts fn =
+  let valuedGrid gridNum ts fn =
+        (vcat
+         [ hcat [ grid gridNum     (n+1) (zip (redBlack (n+1)) (toList v))
+                , strutX 1.0
+                , grid (gridNum+1) (n+1) (zip (redBlack (n+1)) (toList (ts!!0)))
+                ]
+         ]
+        ) # connect {- Outside -} ((1,1,1) :: (Int,Int,Int)) ((2,1,1) :: (Int,Int,Int))
+
+  let displayGrid gridNum ts fn =
 
         mainRender (DiagramOpts (Just 900) (Just 600) fn
                    , DiagramLoopOpts False Nothing 0)
-        (vcat
-         [ hcat [ grid (n+1) (zip (redBlack (n+1)) (toList v))
-                , strutX 1.0
-                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!0)))
-                , strutX 1.0
-                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!1)))
-                , strutX 1.0
-                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!2)))
-                ]
-         , strutY 1.0
-         , hcat [ grid (n+1) (zip (redBlack (n+1)) (toList (ts!!3)))
-                , strutX 1.0
-                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!4)))
-                , strutX 1.0
-                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!5)))
-                , strutX 1.0
-                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!6)))
-                ]
-         , strutY 1.0
-         , hcat [ grid (n+1) (zip (redBlack (n+1)) (toList (ts!!7)))
-                , strutX 1.0
-                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!8)))
-                , strutX 1.0
-                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!9)))
-                , strutX 1.0
-                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!10)))
-                ]
-         ]
-        )
+        (valuedGrid gridNum ts fn)
 
-  displayGrid ts "diagrams/example1.svg"
-  displayGrid us "diagrams/example2.svg"
+  displayGrid 1 ts "diagrams/example1.svg"
+  displayGrid 3 us "diagrams/example2.svg"
 
   diffs <- computeP $ A.zipWith (-) (ts!!10) (us!!10) :: IO (Array U DIM2 Double)
 
