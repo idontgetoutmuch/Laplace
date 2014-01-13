@@ -3,6 +3,7 @@
 {-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE FlexibleInstances   #-}
 
 {-# OPTIONS_GHC -Wall                      #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing   #-}
@@ -13,6 +14,7 @@
 
 module RedBlackStencilDiag
     ( solveLaplace
+    , solveLaplace'
     , projectRed
     , projectBlack
     , combineRB
@@ -24,7 +26,7 @@ import Data.Array.Repa.Stencil.Dim2		as A
 
 
 -- | Solver for the Laplace equation.
-solveLaplace::
+solveLaplace ::
   Monad m
   => Int			-- ^ Number of iterations to use.
   -> Double		        -- ^ weight for over relaxing (>0.0 and <2.0).
@@ -38,11 +40,36 @@ solveLaplace !steps !omega !arrBoundMask !arrBoundValue !arrInit
        blackBoundMask  <- computeP $ projectBlack arrBoundMask
        redBoundValue   <- computeP $ projectRed arrBoundValue
        blackBoundValue <- computeP $ projectBlack arrBoundValue
+
        redInit         <- computeP $ projectRed arrInit
        blackInit       <- computeP $ projectBlack arrInit
        iterateLaplace steps omega redInit blackInit
                       redBoundValue blackBoundValue redBoundMask blackBoundMask
 
+solveLaplace' ::
+  Monad m
+  => Int			-- ^ Number of iterations to use.
+  -> Double		        -- ^ weight for over relaxing (>0.0 and <2.0).
+  -> Array U DIM2 Double	-- ^ Boundary value mask.
+  -> Array U DIM2 Double	-- ^ Boundary values.
+  -> Array U DIM2 Double	-- ^ Initial state. Should have even number of columns
+  -> m (Array U DIM2 Double)
+
+solveLaplace' !steps !omega !arrBoundMask !arrBoundValue !arrInit
+ =  do redBoundMask    <- computeP $ projectRed arrBoundMask
+       blackBoundMask  <- computeP $ projectBlack arrBoundMask
+       redBoundValue   <- computeP $ projectRed arrBoundValue
+       blackBoundValue <- computeP $ projectBlack arrBoundValue
+
+       arrInit' <- computeP
+                   $ A.szipWith (+) arrBoundValue
+                   $ A.szipWith (*) arrBoundMask
+                   $ arrInit
+
+       redInit         <- computeP $ projectRed arrInit'
+       blackInit       <- computeP $ projectBlack arrInit'
+       iterateLaplace steps omega redInit blackInit
+                      redBoundValue blackBoundValue redBoundMask blackBoundMask
 
 iterateLaplace ::
   Monad m

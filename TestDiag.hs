@@ -5,6 +5,7 @@
 module Main (main) where
 
 import Data.Array.Repa hiding ( map, (++) )
+import qualified Data.Array.Repa as A
 import RedBlackStencilDiag
 
 import Text.PrettyPrint.HughesPJClass ( render, pPrint )
@@ -18,6 +19,8 @@ import Diagrams.Backend.CmdLine
 import Diagrams.Backend.SVG.CmdLine
 
 import Data.List.Split ( chunksOf )
+
+import Text.Printf ( printf )
 
 
 dx :: Rational
@@ -73,46 +76,83 @@ bndMask a = traverse a id f
     f get (Z :. ix :. iy)
       = u
 
-gridSq ec = case ec of
-  Left  c ->            square 1 # lw 0 # fc (getColour c)
-  Right c -> (arr c) <> square 1 # lw 0 # fc (getColour c)
+redBlack n = concat $
+             take n $
+             cycle [ take n $ cycle [1, -1]
+                   , take n $ cycle [-1, 1]
+                   ]
+
+gridSq :: (Int, Double) -> Diagram B R2
+gridSq (c, x) = text (printf "%2.2f" x) # scale 0.2 # fc white
+                <> square 1 # lw 0 # fc (getColour c)
+
   where
-    arr c = arrowBetween' (with & arrowHead .~ spike & arrowTail .~ quill) (sPt c) (nPt c)
-            # centerXY
-    sPt x | x == -1 = p2 (0.50, 0.70)
-    sPt x | x ==  1 = p2 (0.50, 0.10)
-    sPt x           = error $ "Spins can be up or down: " ++ show x
 
-    nPt x | x == -1 = p2 (0.50, 0.10)
-    nPt x | x ==  1 = p2 (0.50, 0.70)
-    nPt x           =  error $ "Spins can be up or down: " ++ show x
-
-    getColour x | x == -1 = saddlebrown
-    getColour x | x ==  1 = antiquewhite
+    getColour x | x == -1 = black
+    getColour x | x ==  1 = red
     getColour x           = white
 
-isingGrid :: P.Renderable (P.Path R2) b => Int -> [Int] -> Diagram b R2
-isingGrid n vs = if aLen == sLen
-                 then result
-                 else error $ "Specified grid size " ++ show sLen ++
-                              " Actual grid size "   ++ show aLen
+grid :: Int -> [(Int,Double)] -> Diagram B R2
+grid n vs = if aLen == sLen
+            then result
+            else error $ "Specified grid size " ++ show sLen ++
+                         " Actual grid size "   ++ show aLen
   where
     aLen = length vs
     sLen = n * n
     result = vcat $
              map hcat $
              map (map gridSq) $
-             map (map Right) $
              chunksOf n vs
 
 main = do
   p <- computeP $ bndMask arr
   v <- computeP $ bndVal arr
-  t <- solveLaplace 100 1.0 p v arr
+  t <- solveLaplace 1 1.0 p v arr
 
-  mainRender (DiagramOpts (Just 500) (Just 500) "diagrams/example1.svg"
-             , DiagramLoopOpts False Nothing 0)
-             (isingGrid 3 (replicate (3 * 3) 1) :: Diagram B R2)
+  ts <- mapM (\nSteps -> solveLaplace  nSteps 1.3 p v arr) [1,2,3,4,5,6,7,24,25,26,27]
+  us <- mapM (\nSteps -> solveLaplace' nSteps 1.3 p v arr) [1,2,3,4,5,6,7,24,25,26,27]
+
+  let displayGrid ts fn =
+
+        mainRender (DiagramOpts (Just 900) (Just 600) fn
+                   , DiagramLoopOpts False Nothing 0)
+        (vcat
+         [ hcat [ grid (n+1) (zip (redBlack (n+1)) (toList v))
+                , strutX 1.0
+                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!0)))
+                , strutX 1.0
+                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!1)))
+                , strutX 1.0
+                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!2)))
+                ]
+         , strutY 1.0
+         , hcat [ grid (n+1) (zip (redBlack (n+1)) (toList (ts!!3)))
+                , strutX 1.0
+                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!4)))
+                , strutX 1.0
+                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!5)))
+                , strutX 1.0
+                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!6)))
+                ]
+         , strutY 1.0
+         , hcat [ grid (n+1) (zip (redBlack (n+1)) (toList (ts!!7)))
+                , strutX 1.0
+                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!8)))
+                , strutX 1.0
+                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!9)))
+                , strutX 1.0
+                , grid (n+1) (zip (redBlack (n+1)) (toList (ts!!10)))
+                ]
+         ]
+        )
+
+  displayGrid ts "diagrams/example1.svg"
+  displayGrid us "diagrams/example2.svg"
+
+  diffs <- computeP $ A.zipWith (-) (ts!!10) (us!!10) :: IO (Array U DIM2 Double)
+
+  putStrLn $ show diffs
 
   putStrLn "\nResults\n"
   putStrLn $ show n
@@ -121,4 +161,3 @@ main = do
   putStrLn $ render $ pPrint (t ! (Z :. (0 :: Int ) :. n          ))
   putStrLn $ render $ pPrint (t ! (Z :. n           :. (0 :: Int) ))
   putStrLn $ render $ pPrint (t ! (Z :. n           :. n          ))
-
