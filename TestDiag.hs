@@ -1,6 +1,7 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
 module Main (main) where
 
@@ -105,6 +106,28 @@ grid gridNum n vs = if aLen == sLen
              map (map gridSq) $
              chunksOf n (zip vs [(gridNum, i, j) | i <- [1..n], j <- [1..n]])
 
+shaft = arc 0 (1/6 :: Turn)
+
+arrowStyle1 = (with  & arrowHead  .~ noHead -- dart'
+                     & headSize   .~ 0.6
+                     & headColor  .~ blue
+                     & shaftStyle %~ lw 0.05
+                     & arrowShaft .~ shaft
+                     & shaftColor .~ blue
+                     & arrowTail  .~ spike'
+                     & tailSize   .~ 0.5
+                     & tailColor  .~ blue)
+
+arrowStyle2 = (with  & arrowHead  .~ spike
+                     & headSize   .~ 0.6
+                     & headColor  .~ blue
+                     & shaftStyle %~ lw 0.05
+                     & arrowShaft .~ shaft
+                     & shaftColor .~ blue
+                     & arrowTail  .~ noTail -- dart
+                     & tailSize   .~ 0.5
+                     & tailColor  .~ blue)
+
 main = do
   p <- computeP $ bndMask arr
   v <- computeP $ bndVal arr
@@ -120,7 +143,13 @@ main = do
                 , grid (gridNum+1) (n+1) (zip (redBlack (n+1)) (toList (ts!!0)))
                 ]
          ]
-        ) # connect {- Outside -} ((1,1,1) :: (Int,Int,Int)) ((2,1,1) :: (Int,Int,Int))
+        ) # connectPerim' arrowStyle1
+                          ((2,2,3) :: (Int,Int,Int)) ((1,1,3) :: (Int,Int,Int))
+                          (3/12 :: Turn) (3/12 :: Turn)
+          # connectPerim' arrowStyle2
+                          ((1,3,3) :: (Int,Int,Int)) ((2,2,3) :: (Int,Int,Int))
+                          (9/12 :: Turn) (9/12 :: Turn)
+
 
   let displayGrid gridNum ts fn =
 
