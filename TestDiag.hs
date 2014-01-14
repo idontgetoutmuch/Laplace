@@ -108,25 +108,25 @@ grid gridNum n vs = if aLen == sLen
 
 shaft = arc 0 (1/6 :: Turn)
 
-arrowStyle1 = (with  & arrowHead  .~ noHead -- dart'
-                     & headSize   .~ 0.6
-                     & headColor  .~ blue
-                     & shaftStyle %~ lw 0.05
-                     & arrowShaft .~ shaft
-                     & shaftColor .~ blue
-                     & arrowTail  .~ spike'
-                     & tailSize   .~ 0.5
-                     & tailColor  .~ blue)
+arrowStyle1 c = (with  & arrowHead  .~ noHead
+                       & headSize   .~ 0.6
+                       & headColor  .~ c
+                       & shaftStyle %~ lw 0.05
+                       & arrowShaft .~ shaft
+                       & shaftColor .~ c
+                       & arrowTail  .~ spike'
+                       & tailSize   .~ 0.5
+                       & tailColor  .~ c)
 
-arrowStyle2 = (with  & arrowHead  .~ spike
-                     & headSize   .~ 0.6
-                     & headColor  .~ blue
-                     & shaftStyle %~ lw 0.05
-                     & arrowShaft .~ shaft
-                     & shaftColor .~ blue
-                     & arrowTail  .~ noTail -- dart
-                     & tailSize   .~ 0.5
-                     & tailColor  .~ blue)
+arrowStyle2 c = (with  & arrowHead  .~ spike
+                       & headSize   .~ 0.6
+                       & headColor  .~ c
+                       & shaftStyle %~ lw 0.05
+                       & arrowShaft .~ shaft
+                       & shaftColor .~ c
+                       & arrowTail  .~ noTail
+                       & tailSize   .~ 0.5
+                       & tailColor  .~ c)
 
 main = do
   p <- computeP $ bndMask arr
@@ -139,23 +139,43 @@ main = do
   let valuedGrid gridNum ts fn =
         (vcat
          [ hcat [ grid gridNum     (n+1) (zip (redBlack (n+1)) (toList v))
-                , strutX 1.0
+                , strutX 2.0
                 , grid (gridNum+1) (n+1) (zip (redBlack (n+1)) (toList (ts!!0)))
+                , strutX 0.5
+                , grid (gridNum+2) (n+1) (zip (redBlack (n+1)) (toList (ts!!0)))
                 ]
          ]
-        ) # connectPerim' arrowStyle1
-                          ((2,2,3) :: (Int,Int,Int)) ((1,1,3) :: (Int,Int,Int))
+        ) # connectPerim' (arrowStyle1 blue)
+                          ((2,2,2) :: (Int,Int,Int)) ((1,1,2) :: (Int,Int,Int))
                           (3/12 :: Turn) (3/12 :: Turn)
-          # connectPerim' arrowStyle2
-                          ((1,3,3) :: (Int,Int,Int)) ((2,2,3) :: (Int,Int,Int))
+          # connectPerim' (arrowStyle1 blue)
+                          ((2,2,2) :: (Int,Int,Int)) ((1,2,3) :: (Int,Int,Int))
+                          (5/12 :: Turn) (3/12 :: Turn)
+          # connectPerim' (arrowStyle2 blue)
+                          ((1,3,2) :: (Int,Int,Int)) ((2,2,2) :: (Int,Int,Int))
                           (9/12 :: Turn) (9/12 :: Turn)
+          # connectPerim' (arrowStyle2 blue)
+                          ((1,2,1) :: (Int,Int,Int)) ((2,2,2) :: (Int,Int,Int))
+                          (9/12 :: Turn) (7/12 :: Turn)
+          # connectPerim' (arrowStyle1 green)
+                          ((3,2,3) :: (Int,Int,Int)) ((2,1,3) :: (Int,Int,Int))
+                          (3/12 :: Turn) (3/12 :: Turn)
+          # connectPerim' (arrowStyle1 green)
+                          ((3,2,3) :: (Int,Int,Int)) ((2,2,4) :: (Int,Int,Int))
+                          (5/12 :: Turn) (3/12 :: Turn)
+          # connectPerim' (arrowStyle2 green)
+                          ((2,3,3) :: (Int,Int,Int)) ((3,2,3) :: (Int,Int,Int))
+                          (9/12 :: Turn) (9/12 :: Turn)
+          # connectPerim' (arrowStyle2 green)
+                          ((2,2,2) :: (Int,Int,Int)) ((3,2,3) :: (Int,Int,Int))
+                          (9/12 :: Turn) (7/12 :: Turn)
 
 
   let displayGrid gridNum ts fn =
 
         mainRender (DiagramOpts (Just 900) (Just 600) fn
                    , DiagramLoopOpts False Nothing 0)
-        (valuedGrid gridNum ts fn)
+        (valuedGrid gridNum us fn)
 
   displayGrid 1 ts "diagrams/example1.svg"
   displayGrid 3 us "diagrams/example2.svg"
